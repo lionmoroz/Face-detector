@@ -4,6 +4,8 @@ import Rank from './components/Rank';
 import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import Logo from './components/Logo/Logo';
+import Singin from './components/Registration/Singin';
+import Register from './components/Registration/Register';
 import Clarifai from 'clarifai';
 import Particles from 'react-particles-js';
 import './App.css';
@@ -38,7 +40,9 @@ class App extends Component {
 		this.state = {
 			input: '',
 			imageUrl: '',
-			box:{}
+			box:{},
+			route: 'singin',
+			isSingIn: false
 		}
 	}
 
@@ -75,15 +79,41 @@ class App extends Component {
 		.catch(err => console.log(err))// there was an error}
 
 	}
+	onRouteChange = (route) =>{
+		if (route === 'singout'){
+			this.setState({isSingIn:false});
+		}else if (route === 'home'){
+			this.setState({isSingIn:true});
+		}
+		this.setState({route: route});
+	}
+	
+
+
+
+
 	render(){
+
+		const {isSingIn, box, route, imageUrl} = this.state;
+
 		return (
 		    <div className="App">
 		      <Particles className='particles' params={particleFunc} />
-		      <Navigation/>
-		      <Logo/>
-		      <Rank/>
-		      <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
-		      <FaceRecognition box={this.state.box} imageUrl = {this.state.imageUrl}/>
+		      <Navigation isSingIn={isSingIn} onRouteChange={this.onRouteChange}/>
+		      { this.state.route === 'home'
+		      	? <div>
+				      <Logo/>
+				      <Rank/>
+				      <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
+				      <FaceRecognition box={box} imageUrl = {imageUrl}/>
+				  </div>
+		      	:(	this.state.route === 'singin'
+		      		? <Singin onRouteChange={this.onRouteChange}/>
+		      		: <Register onRouteChange={this.onRouteChange}/>
+		      	)
+
+		 	  }
+
 		    </div>
 		);
 	}

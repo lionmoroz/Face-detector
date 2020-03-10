@@ -17,7 +17,7 @@ const app = new Clarifai.App({
 const particleFunc = {
 	"particles": {
 		        "number": {
-		            "value": 100
+		            "value": 60
 		        },
 		        "size": {
 		            "value": 3
@@ -45,6 +45,11 @@ class App extends Component {
 			isSingIn: false
 		}
 	}
+	// componentDidMount () {
+	// 		fetch('http://localhost:3000')
+	// 	    .then((response) => response.json())
+	// 	    .then(console.log);
+	// 	}
 
 	culculateFaceLocation = (data) =>{
 		const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
@@ -60,7 +65,6 @@ class App extends Component {
 	}
 
 	displayFaceBox = (box) =>{
-		console.log(box);
 		this.setState({box:box});
 	}
 
@@ -100,14 +104,14 @@ class App extends Component {
 		    <div className="App">
 		      <Particles className='particles' params={particleFunc} />
 		      <Navigation isSingIn={isSingIn} onRouteChange={this.onRouteChange}/>
-		      { this.state.route === 'home'
+		      { route === 'home'
 		      	? <div>
 				      <Logo/>
 				      <Rank/>
 				      <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
 				      <FaceRecognition box={box} imageUrl = {imageUrl}/>
 				  </div>
-		      	:(	this.state.route === 'singin'
+		      	:(	route === 'singin'
 		      		? <Singin onRouteChange={this.onRouteChange}/>
 		      		: <Register onRouteChange={this.onRouteChange}/>
 		      	)

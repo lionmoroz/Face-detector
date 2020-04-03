@@ -1,126 +1,148 @@
-import React, {Component} from 'react';
-import Navigation from './components/Navigation';
-import Rank from './components/Rank';
-import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
-import FaceRecognition from './components/FaceRecognition/FaceRecognition';
-import Logo from './components/Logo/Logo';
-import Singin from './components/Registration/Singin';
-import Register from './components/Registration/Register';
-import Clarifai from 'clarifai';
+import React, { Component } from 'react';
 import Particles from 'react-particles-js';
+import FaceRecognition from './components/FaceRecognition/FaceRecognition';
+import Navigation from './components/Navigation';
+import Signin from './components/Singin';
+import Register from './components/Register';
+import Logo from './components/Logo/Logo';
+import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
+import Rank from './components/Rank';
 import './App.css';
 
-const app = new Clarifai.App({
- apiKey: '5cba64afbc2a4245b8032bca1989cff8'
-});
-
-const particleFunc = {
-	"particles": {
-		        "number": {
-		            "value": 60
-		        },
-		        "size": {
-		            "value": 3
-		        },
-		        "line_linked": {
-        				shadow: {
-        					enable: true,
-        					color: "#800080",
-        					blur: 5
-        				}
-        			}
-		   		}
+const particlesOptions = {
+  particles: {
+    number: {
+      value: 30,
+      density: {
+        enable: true,
+        value_area: 800
+      }
+    }
+  }
 }
 
-
+const initialState = {
+  input: '',
+  imageUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
 
 class App extends Component {
-	constructor(){
-		super();
-		this.state = {
-			input: '',
-			imageUrl: '',
-			box:{},
-			route: 'singin',
-			isSingIn: false
-		}
-	}
-	// componentDidMount () {
-	// 		fetch('http://localhost:3000')
-	// 	    .then((response) => response.json())
-	// 	    .then(console.log);
-	// 	}
+  constructor() {
+    super();
+    this.state = initialState;
+  }
 
-	culculateFaceLocation = (data) =>{
-		const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
-		const image = document.getElementById('inputimage');
-		const width = Number(image.width);
-		const height = Number(image.height);
-		return{
-			leftCol: clarifaiFace.left_col*width,
-			topRow: clarifaiFace.top_row*height,
-			rightCol: width - (clarifaiFace.right_col*width),
-			bottomRow: height - (clarifaiFace.bottom_row*height),
-		}
-	}
+  loadUser = (data) => {
+    this.setState({user: {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      entries: data.entries,
+      joined: data.joined
+    }})
+  }
 
-	displayFaceBox = (box) =>{
-		this.setState({box:box});
-	}
+  calculateFaceLocation = (data) => {
+    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const image = document.getElementById('inputimage');
+    const width = Number(image.width);
+    const height = Number(image.height);
+    return {
+      leftCol: clarifaiFace.left_col * width,
+      topRow: clarifaiFace.top_row * height,
+      rightCol: width - (clarifaiFace.right_col * width),
+      bottomRow: height - (clarifaiFace.bottom_row * height)
+    }
+  }
 
-	onInputChange = (event) =>{
-		this.setState({input:event.target.value});
-	}
+  displayFaceBox = (box) => {
+    this.setState({box: box});
+  }
 
-	onButtonSubmit = () =>{
-		this.setState({imageUrl:this.state.input});
-		app.models.predict(
-			Clarifai.FACE_DETECT_MODEL,
-		    // URL
-		    this.state.input
-		)
-		.then(response => this.displayFaceBox(this.culculateFaceLocation(response)))
-		.catch(err => console.log(err))// there was an error}
+  onInputChange = (event) => {
+    this.setState({input: event.target.value});
+  }
 
-	}
-	onRouteChange = (route) =>{
-		if (route === 'singout'){
-			this.setState({isSingIn:false});
-		}else if (route === 'home'){
-			this.setState({isSingIn:true});
-		}
-		this.setState({route: route});
-	}
-	
+  onButtonSubmit = () => {
+    this.setState({imageUrl: this.state.input});
+      fetch('http://localhost:3000/imageurl', {
+        method: 'post',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          input: this.state.input
+        })
+      })
+      .then(response => response.json())
+      .then(response => {
+        if (response) {
+          fetch('http://localhost:3000/image', {
+            method: 'put',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              id: this.state.user.id
+            })
+          })
+            .then(response => response.json())
+            .then(count => {
+              this.setState(Object.assign(this.state.user, { entries: count}))
+            })
+            .catch(console.log)
 
+        }
+        this.displayFaceBox(this.calculateFaceLocation(response))
+      })
+      .catch(err => console.log(err));
+  }
 
+  onRouteChange = (route) => {
+    if (route === 'signout') {
+      this.setState(initialState)
+    } else if (route === 'home') {
+      this.setState({isSignedIn: true})
+    }
+    this.setState({route: route});
+  }
 
-
-	render(){
-
-		const {isSingIn, box, route, imageUrl} = this.state;
-
-		return (
-		    <div className="App">
-		      <Particles className='particles' params={particleFunc} />
-		      <Navigation isSingIn={isSingIn} onRouteChange={this.onRouteChange}/>
-		      { route === 'home'
-		      	? <div>
-				      <Logo/>
-				      <Rank/>
-				      <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
-				      <FaceRecognition box={box} imageUrl = {imageUrl}/>
-				  </div>
-		      	:(	route === 'singin'
-		      		? <Singin onRouteChange={this.onRouteChange}/>
-		      		: <Register onRouteChange={this.onRouteChange}/>
-		      	)
-
-		 	  }
-
-		    </div>
-		);
-	}
+  render() {
+    const { isSignedIn, imageUrl, route, box } = this.state;
+    return (
+      <div className="App">
+         <Particles className='particles'
+          params={particlesOptions}
+        />
+        <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
+        { route === 'home'
+          ? <div>
+              <Logo />
+              <Rank
+                name={this.state.user.name}
+                entries={this.state.user.entries}
+              />
+              <ImageLinkForm
+                onInputChange={this.onInputChange}
+                onButtonSubmit={this.onButtonSubmit}
+              />
+              <FaceRecognition box={box} imageUrl={imageUrl} />
+            </div>
+          : (
+             route === 'signin'
+             ? <Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange}/>
+             : <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange}/>
+            )
+        }
+      </div>
+    );
+  }
 }
 
 export default App;
